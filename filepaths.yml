@@ -1,0 +1,5 @@
+birdclefs:
+  2024: data/birdclef-2024/train_audio
+  2023: data/birdclef-2023/train_audio
+  2022: data/birdclef-2022/train_audio
+  2021: data/birdclef-2021/train_short_audio 
