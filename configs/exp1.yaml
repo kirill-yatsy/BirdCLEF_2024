@@ -1,4 +1,6 @@
 data:
+  sample_rate: 32000
+  frame_length: 5
   splitted_datasets:
     birdclefs:
       2024: data/birdclef-2024/train_audio
@@ -6,3 +8,7 @@ data:
       2022: data/birdclef-2022/train_audio
       2021: data/birdclef-2021/train_short_audio 
   short_audio_stategy: "cut_first_10_percent_and_add_to_track"
+
+train:
+  epoch_number: 5
+  batch_size: 32
