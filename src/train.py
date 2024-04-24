@@ -16,8 +16,6 @@ from src.config import ConfigHolder
 def train():
     df = get_classified_df()
     print(ConfigHolder.config)
-    # print(df)
-    # print(len(df))
 
     sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
     targets = df["y"]
@@ -41,9 +39,6 @@ def train():
         num_workers=4,
         prefetch_factor=2,
     )
-
-    iterD = iter(train_loader)
-    waveforms, targets, _ = next(iterD)
 
     epoch_num = ConfigHolder.config.train.epoch_number
     for epoch in range(epoch_num):
