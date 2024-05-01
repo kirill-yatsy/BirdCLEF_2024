@@ -1,6 +1,15 @@
+seed: 42
+mode: "train"
+device: "cuda"
 data:
   sample_rate: 32000
   frame_length: 5
+  n_mels: 128
+  nfft: 2028
+  hop_length: 512
+  fmax: 16000
+  fmin: 20
+  top_db: 80
   splitted_datasets:
     birdclefs:
       2024: data/birdclef-2024/train_audio
@@ -10,5 +19,27 @@ data:
   short_audio_stategy: "cut_first_10_percent_and_add_to_track"
 
 train:
-  epoch_number: 5
-  batch_size: 32
+  fast_dev_run: False
+  epoch_number: 30
+  batch_size: 182
+  timm_model: "efficientnet_b1"
+  optimizer: "adam"
+  lr: 0.001
+  scheduler: "plateau"
+  criterion: "bce"
+  num_classes: 397
+  num_workers: 8
+  pin_memory: True
+  device: "cuda"
+  checkpoint_path: "bird_clef_2024/85a51gf3/checkpoints/epoch=1-step=598.ckpt"
+  save_model_path: "models/efficientnet_b1/exp1"
+  save_model_name: "model.pth"
+  save_model_every_epoch: True
+  save_model_every_epoch_path: "./checkpoints/efficientnet_b1/exp1"
+  save_model_every_epoch_name: "model_epoch_"
+  save_model_every_epoch_extension: ".pth"
+  save_model_every_epoch_overwrite: True
+  save_model_every_epoch_keep_last: 3
+  float32_matmul_precision: "high"
+scheduler:
+  num_warmup_steps: 0

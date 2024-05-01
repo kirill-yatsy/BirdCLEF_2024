@@ -161,3 +161,8 @@ cython_debug/
 
 data/birdclef*
 outputs
+
+wandb
+lightning_logs
+
+bird_clef_2024
