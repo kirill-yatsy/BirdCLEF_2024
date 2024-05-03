@@ -1,7 +1,7 @@
 import torch
 import torchaudio
 
-from src.config import ConfigHolder
+from src.config import BirdConfig, ConfigHolder
 
 
 def get_spectrogram_augmentations():
@@ -11,25 +11,25 @@ def get_spectrogram_augmentations():
     ]
 
 
-def get_spectrogram_transforms():
+def get_spectrogram_transforms(config: BirdConfig):
     spectrogram_transforms = []
 
     mel_spectrogram = torchaudio.transforms.MelSpectrogram(
-        ConfigHolder.config.data.sample_rate,
-        n_mels=ConfigHolder.config.data.n_mels,
-        n_fft=ConfigHolder.config.data.nfft,
-        hop_length=ConfigHolder.config.data.hop_length,
-        f_max=ConfigHolder.config.data.fmax,
-        f_min=ConfigHolder.config.data.fmin,
+        config.data.sample_rate,
+        n_mels=config.data.n_mels,
+        n_fft=config.data.nfft,
+        hop_length=config.data.hop_length,
+        f_max=config.data.fmax,
+        f_min=config.data.fmin,
     )
     amplitude_to_db = torchaudio.transforms.AmplitudeToDB(
-        top_db=ConfigHolder.config.data.top_db
+        top_db=config.data.top_db
     )
 
     spectrogram_transforms.append(mel_spectrogram)
     spectrogram_transforms.append(amplitude_to_db)
 
-    if ConfigHolder.config.mode == "train":
+    if config.mode == "train":
         spectrogram_augmentations = get_spectrogram_augmentations()
         spectrogram_transforms.extend(spectrogram_augmentations)
 

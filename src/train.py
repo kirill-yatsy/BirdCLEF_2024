@@ -2,7 +2,6 @@ import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm
 from src.data.get_data_loaders import get_data_loaders
-from src.data.StratifiedSampler import StratifiedSampler
 from src.data.dataset import BirdClefDataset
 from src.data.get_classified_df import get_classified_df
 from torch.utils.data import DataLoader
@@ -14,7 +13,7 @@ import torch.nn as nn
 import torch
 from lightning.pytorch.callbacks import DeviceStatsMonitor
 
-from src.config import ConfigHolder
+from src.config import BirdConfig, ConfigHolder
 from src.model.custom_model import CustomModel
 from src.model.custom_model_wrapper import CustomModelWrapper
 from torch import optim, nn, utils, Tensor
@@ -24,68 +23,55 @@ import wandb
 from pytorch_lightning.loggers import WandbLogger
 from lightning.pytorch.callbacks import LearningRateMonitor
 from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 
-def train():
+def train(config: BirdConfig):
     torch.set_float32_matmul_precision(
-        ConfigHolder.config.train.float32_matmul_precision
+        config.train.float32_matmul_precision
     )
     wandb_logger = WandbLogger(project="bird_clef_2024", id="exp1")
-    wandb_logger.experiment.config["batch_size"] = ConfigHolder.config.train.batch_size 
+    wandb_logger.experiment.config.update({
+        "batch_size": config.train.batch_size,
+    }, allow_val_change=True) 
 
-    df, train_loader, val_loader = get_data_loaders()
+    df, train_loader, val_loader = get_data_loaders(config)
     num_classes = len(df["species"].unique())
-    # if ConfigHolder.config.train.checkpoint_path is not None:
-    #     model_wrapper = CustomModelWrapper.load_from_checkpoint(
-    #         ConfigHolder.config.train.checkpoint_path
-    #     )
-
+ 
     model = CustomModel(backbone_name="efficientnet_b1", num_classes=num_classes)
-    loss = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    model_wrapper = CustomModelWrapper(model, loss, optimizer)
+ 
+    model_wrapper = CustomModelWrapper(config, model, df)
 
     trainer = L.Trainer(
-        callbacks=[
-            # DeviceStatsMonitor(),
+        callbacks=[ 
             LearningRateMonitor(logging_interval="step"),
-            ModelCheckpoint(),
+            ModelCheckpoint(
+                monitor="val_loss",
+                save_top_k=config.train.save_model_every_epoch_keep_last,
+                mode="min",
+                dirpath=config.train.save_model_path,
+                filename="model-{epoch:02d}-{val_loss:.2f}",
+            ),
+            EarlyStopping(
+                monitor="val_loss",
+                patience=10,
+                verbose=True,
+                mode="min",
+            )
         ],
-        max_epochs=ConfigHolder.config.train.epoch_number,
+        max_epochs=config.train.epoch_number,
         # limit_test_batches=0.1,
         # limit_train_batches=0.1,
         # limit_val_batches=0.1,
         logger=wandb_logger,
-        fast_dev_run=ConfigHolder.config.train.fast_dev_run,
-        enable_checkpointing=ConfigHolder.config.train.save_model_every_epoch,
-        default_root_dir=ConfigHolder.config.train.save_model_every_epoch_path,
+        fast_dev_run=config.train.fast_dev_run,
+        enable_checkpointing=config.train.save_model_every_epoch,
+        default_root_dir=config.train.save_model_every_epoch_path,
     )
     trainer.fit(
         model_wrapper,
         train_loader,
         val_dataloaders=val_loader,
-        ckpt_path=ConfigHolder.config.train.checkpoint_path,
+        ckpt_path=config.train.checkpoint_path,
     )
     wandb.finish()
-    # epoch_num = ConfigHolder.config.train.epoch_number
-    # for epoch in range(epoch_num):
-    #     with tqdm(train_loader, unit="batch") as tepoch:
-    #         for waveforms, targets, _ in tepoch:
-    #             tepoch.set_description(f"Epoch {epoch}")
-    #             tepoch.set_postfix(loss=0.0)
-    #             tepoch.update()
-
-    # model.train()
-    # optimizer.zero_grad()
-    # outputs = model(waveforms)
-    # loss = criterion(outputs, targets)
-    # loss.backward()
-    # optimizer.step()
-    # tepoch.set_postfix(loss=loss.item())
-
-    # model.eval()
-    # outputs = model(waveforms)
-    # loss = criterion(outputs, targets)
-    # tepoch.set_postfix(loss=loss.item())
-
-    print("Training the model...")

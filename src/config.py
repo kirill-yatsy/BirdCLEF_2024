@@ -66,6 +66,7 @@ class BirdConfig:
     device: str
     data: DataType
     train: TrainType
+    scheduler: SchedulerType
 
 
 class ConfigHolder:

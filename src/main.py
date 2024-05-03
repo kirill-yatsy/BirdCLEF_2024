@@ -17,7 +17,7 @@ def main(cfg: DictConfig) -> None:
     args = parser.parse_args()
 
     if args.operation == "train":
-        train()
+        train(cfg)
 
 
 if __name__ == "__main__":
