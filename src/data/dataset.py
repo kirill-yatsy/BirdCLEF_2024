@@ -7,7 +7,7 @@ import numpy as np
 import torch.nn as nn
 
 from src.config import BirdConfig, ConfigHolder
-from src.data.get_spectrogram_transforms import get_spectrogram_transforms
+from src.utils.get_spectrogram_transforms import get_spectrogram_transforms
 from src.utils.get_random_clip import get_rendom_clip, standardize_waveform
 
 audio_cache = {}

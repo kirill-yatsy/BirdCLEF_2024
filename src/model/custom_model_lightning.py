@@ -1,4 +1,5 @@
 import os
+from typing import List
 from torch import optim, nn, utils, Tensor
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
@@ -8,23 +9,22 @@ from src.config import BirdConfig, ConfigHolder
 from src.model.custom_model import CustomModel
 from sklearn.metrics import accuracy_score, classification_report, f1_score
 
+from src.model.get_callbacks import get_callbacks
 from src.model.get_loss import get_loss
 from src.model.get_optimizer import get_optimizer
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.callbacks import LearningRateMonitor
+from lightning.pytorch.callbacks import ModelCheckpoint
 
 
-
-class CustomModelWrapper(L.LightningModule):
+class CustomModelLightning(L.LightningModule):
     def __init__(self, config: BirdConfig, model: nn.Module, df):
         super().__init__()
         self.model = model
         self.validation_step_outputs = []
         self.loss = get_loss()
         self.df = df
-        self.config = config
-        # self.automatic_optimization = False
-        # self.lr_schedulers = optim.lr_scheduler.StepLR(
-        #     optimizer, step_size=1, gamma=0.1
-        # )
+        self.config = config 
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
@@ -53,10 +53,13 @@ class CustomModelWrapper(L.LightningModule):
         self.log("val_accuracy", accuracy_score(y, y_hat))
         return loss
     
-    def on_validation_epoch_end(self):
-        # all_preds = torch.stack(self.validation_step_outputs)
+    # def on_validation_epoch_end(self):
+    #     # all_preds = torch.stack(self.validation_step_outputs)
         
-        self.validation_step_outputs.clear() 
+    #     self.validation_step_outputs.clear() 
+
+    def configure_callbacks(self) -> List[L.Callback] | L.Callback:
+        return get_callbacks(self.config)
 
     def configure_optimizers(self):
         optimizer = get_optimizer(self.model)
