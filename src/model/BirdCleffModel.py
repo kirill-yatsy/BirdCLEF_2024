@@ -1,0 +1,161 @@
+import os
+from typing import List
+from torch import optim, nn, utils, Tensor
+from torchvision.datasets import MNIST
+from torchvision.transforms import ToTensor
+import lightning as L
+import torch
+from src.config import BirdConfig, ConfigHolder
+from sklearn.metrics import accuracy_score, classification_report, f1_score
+
+from src.metrics.AccuracyPerClass import AccuracyPerClass
+from src.model.get_callbacks import BirdCleffModelConfig, get_callbacks
+from src.model.get_loss import get_loss
+from src.model.get_optimizer import get_optimizer
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.callbacks import LearningRateMonitor
+from lightning.pytorch.callbacks import ModelCheckpoint
+import torchmetrics
+import timm
+import wandb
+
+
+class SpatialAttentionModule(nn.Module):
+    def __init__(self, in_channels):
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, 1, kernel_size=3, padding=1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        attention_map = self.conv(x)
+        attention_map = self.sigmoid(attention_map)  # Normalize to range [0, 1]
+        return x * attention_map
+
+
+class Model(nn.Module):
+    def __init__(self, backbone_name, num_classes):
+        super().__init__()
+        self.backbone = timm.create_model(
+            backbone_name,
+            pretrained=True,
+            num_classes=0,
+            global_pool="",
+            in_chans=1,
+        )
+
+        # Remove the original classification head of the backbone
+        self.backbone.classifier = nn.Identity()
+
+        self.attention = SpatialAttentionModule(self.backbone.num_features)
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.head = nn.Linear(self.backbone.num_features, num_classes)
+
+    def forward(self, x):
+        x = self.backbone(x)
+        x = self.attention(x)
+        x = self.pool(x)
+        x = x.flatten(1)
+        x = self.head(x)
+        return x
+
+
+class BirdCleffModel(L.LightningModule):
+    def __init__(self, config: BirdConfig, df, num_classes):
+        super().__init__()
+
+        self.model = Model(
+            backbone_name=config.train.timm_model, num_classes=num_classes
+        )
+        # self.validation_step_outputs = torch.tensor([])
+        self.loss = get_loss()
+        self.df = df
+        self.num_classes = num_classes
+        self.config = config
+         
+        # targetToLabelMapper = dict(enumerate(self.df["species"].unique()))
+
+        self.init_epoch_outputs()
+        # self.init_step_outputs()
+
+    def init_epoch_outputs(self):
+        self.training_epoch_outputs = {
+            "y_hat": torch.tensor([]),
+            "y": torch.tensor([]),
+        }
+        self.validation_epoch_outputs = {
+            "y_hat": torch.tensor([]),
+            "y": torch.tensor([]),
+        }
+
+    # def init_step_outputs(self):
+    #     self.training_current_step_outputs = {"y_hat": torch.tensor([]), "y": torch.tensor([])}
+    #     self.validation_current_step_outputs = {"y_hat": torch.tensor([]), "y": torch.tensor([])}
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.model(x)
+
+    def training_step(self, batch, batch_idx):
+        _, y, _, x = batch
+        y = y.long()
+        y_hat = self(x)
+
+        # append the y_hat and y to the training_epoch_outputs
+        self.training_epoch_outputs["y_hat"] = torch.cat(
+            (self.training_epoch_outputs["y_hat"], y_hat.cpu())
+        )
+        self.training_epoch_outputs["y"] = torch.cat(
+            (self.training_epoch_outputs["y"], y.cpu())
+        )
+
+        loss = self.loss(y_hat, y)
+        self.log("train_loss", loss) 
+
+        return {"loss": loss, "y_hat": y_hat.cpu(), "y": y.cpu()}
+ 
+
+    def validation_step(self, batch, batch_idx):
+        _, y, _, x = batch
+        y = y.long()
+        y_hat = self(x)
+
+        # append the y_hat and y to the validation_step_outputs
+        # concat the y_hat and y to the validation_epoch_outputs
+        self.validation_epoch_outputs["y_hat"] = torch.cat(
+            (self.validation_epoch_outputs["y_hat"], y_hat.cpu())
+        )
+        self.validation_epoch_outputs["y"] = torch.cat(
+            (self.validation_epoch_outputs["y"], y.cpu())
+        )
+
+        loss = self.loss(y_hat, y)
+        self.log("val_loss", loss)
+
+        return {
+            "loss": loss,
+            "y_hat": y_hat.cpu(),
+            "y": y.cpu(),
+        }
+
+    # def on_validation_batch_end(self):
+    #     self.init_step_outputs()
+
+    def on_test_epoch_start(self):
+        self.init_epoch_outputs()
+
+    def configure_callbacks(self):
+        return get_callbacks(self.config)
+
+    def configure_optimizers(self):
+        optimizer = get_optimizer(self.model)
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": optim.lr_scheduler.StepLR(
+                    optimizer,
+                    step_size=self.config.scheduler.step_size,
+                    gamma=self.config.scheduler.gamma,
+                ),
+                "monitor": "val_loss",
+                "frequency": 1,
+            },
+        }

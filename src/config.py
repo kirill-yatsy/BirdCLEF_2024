@@ -61,6 +61,7 @@ class SchedulerType:
 
 @dataclass
 class BirdConfig:
+    id: str
     seed: int
     mode: str
     device: str

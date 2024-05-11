@@ -167,3 +167,5 @@ lightning_logs
 
 bird_clef_2024
 models
+checkpoints
+.neptune

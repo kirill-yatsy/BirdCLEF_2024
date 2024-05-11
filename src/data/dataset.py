@@ -36,4 +36,5 @@ class BirdClefDataset(Dataset):
             self.config.data.sample_rate * self.config.data.frame_length,
         )
         spec = get_spectrogram_transforms(self.config)(waveform)
+        assert len(spec.shape) == 3
         return (waveform, target, sample_rate, spec)

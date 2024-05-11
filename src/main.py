@@ -6,7 +6,7 @@ import hydra
 from lightning.pytorch import Trainer, seed_everything
 
 
-@hydra.main(version_base=None, config_path="../configs", config_name="exp1")
+@hydra.main(version_base=None, config_path="../configs", config_name="exp3")
 def main(cfg: DictConfig) -> None:
     seed_everything(cfg.seed)
     ConfigHolder.set_instance(cfg)
