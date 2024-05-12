@@ -29,7 +29,7 @@ class BirdClefDataset(Dataset):
         # sample_rate = sample_rate.to(self.config.device)
 
         
-        waveform = get_rendom_clip(self.config, waveform, sample_rate)
+        waveform = get_rendom_clip(self.config, waveform, sample_rate, self.config.data.frame_length)
         waveform = standardize_waveform(self.config, waveform, sample_rate)
         waveform = waveform.reshape(
             1,

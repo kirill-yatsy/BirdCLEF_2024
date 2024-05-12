@@ -21,13 +21,13 @@ def standardize_waveform(config: BirdConfig, waveform: torch.Tensor, sample_rate
     return waveform
 
 
-def get_rendom_clip(config: BirdConfig, waveform, sample_rate, frame_size=5) -> torch.Tensor:
+def get_rendom_clip(config: BirdConfig, waveform, sample_rate, frame_size=15) -> torch.Tensor:
     """
-    Get a random 5 second clip from the audio file
+    Get a random frame_size second clip from the audio file
     :param waveform: waveform of the audio file
     :param sample_rate: sample rate of the audio file
     :param frame_size: size of the clip in seconds
-    :return: 5 second clip
+    :return: frame_size second clip
     """
     short_audio_stategy = config.data.short_audio_stategy
 

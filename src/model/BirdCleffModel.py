@@ -40,7 +40,7 @@ class Model(nn.Module):
             pretrained=True,
             num_classes=0,
             global_pool="",
-            in_chans=1,
+            in_chans=3,
         )
 
         # Remove the original classification head of the backbone

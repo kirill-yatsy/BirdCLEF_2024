@@ -5,7 +5,7 @@ mode: "train"
 device: "cuda"
 data:
   sample_rate: 32000
-  frame_length: 5
+  frame_length: 15
   n_mels: 128
   nfft: 2028
   hop_length: 512
@@ -22,8 +22,8 @@ data:
 train:
   fast_dev_run: False
   epoch_number: 20
-  batch_size: 148
-  num_workers: 10
+  batch_size: 64
+  num_workers: 8
   timm_model: "efficientnet_b1"
   optimizer: "adam"
   lr: 0.001
