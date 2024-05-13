@@ -3,8 +3,7 @@ from lightning import Callback
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import LearningRateMonitor
 from lightning.pytorch.callbacks import ModelCheckpoint
-import torchmetrics
-from src.config import BirdConfig, ConfigHolder
+import torchmetrics 
 import time
 import lightning as L
 import torch
@@ -12,6 +11,8 @@ from enum import Enum
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 from dataclasses import dataclass
+
+from src.configs.base_config import BirdConfig
 
 
 @dataclass

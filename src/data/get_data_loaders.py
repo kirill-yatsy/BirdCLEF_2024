@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
-from tqdm import tqdm
-from src.config import BirdConfig, ConfigHolder 
+from tqdm import tqdm 
+from src.configs.base_config import BirdConfig
 from src.data.dataset import BirdClefDataset
 from src.data.get_classified_df import get_classified_df
 from torch.utils.data import DataLoader
@@ -56,18 +56,18 @@ def get_data_loaders(config: BirdConfig):
 
     train_loader = DataLoader(
         dataset,
-        batch_size=ConfigHolder.config.train.batch_size,
+        batch_size=config.train.batch_size,
         sampler=train_sampler,
-        num_workers=ConfigHolder.config.train.num_workers,
+        num_workers=config.train.num_workers,
         prefetch_factor=2, 
         # multiprocessing_context=None if config.train.fast_dev_run else "spawn",
         # persistent_workers=True 
     )
     val_loader = DataLoader(
         dataset,
-        batch_size=ConfigHolder.config.train.batch_size,
+        batch_size=config.train.batch_size,
         sampler=val_sampler,
-        num_workers=ConfigHolder.config.train.num_workers,
+        num_workers=config.train.num_workers,
         prefetch_factor=2, 
         # multiprocessing_context=None if config.train.fast_dev_run else "spawn",
         # persistent_workers=True

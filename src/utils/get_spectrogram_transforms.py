@@ -1,8 +1,9 @@
 import torch
 import torchaudio
-import torchaudio.transforms as T
-from src.config import BirdConfig, ConfigHolder
+import torchaudio.transforms as T 
 import librosa
+
+from src.configs.base_config import BirdConfig
 
 
 def get_spectrogram_augmentations():
@@ -45,25 +46,25 @@ class MonoToThreeChannel(torch.nn.Module):
         self.config = config
 
         self.mel_spectrogram_transform = torchaudio.transforms.MelSpectrogram(
-            config.data.sample_rate,
-            n_mels=config.data.n_mels,
-            n_fft=config.data.nfft,
-            hop_length=config.data.hop_length,
-            f_max=config.data.fmax,
-            f_min=config.data.fmin,
+            config.data_processing.sample_rate,
+            n_mels=config.data_processing.n_mels,
+            n_fft=config.data_processing.nfft,
+            hop_length=config.data_processing.hop_length,
+            f_max=config.data_processing.fmax,
+            f_min=config.data_processing.fmin,
         )
         self.amplitude_db_transform = torchaudio.transforms.AmplitudeToDB(
-            top_db=config.data.top_db
+            top_db=config.data_processing.top_db
         )
         self.mfcc_transform = T.MFCC(
-            sample_rate=config.data.sample_rate,
-            n_mfcc=config.data.n_mels,
+            sample_rate=config.data_processing.sample_rate,
+            n_mfcc=config.data_processing.n_mels,
             melkwargs={
-                "n_mels": config.data.n_mels,
-                "n_fft": config.data.nfft,
-                "hop_length": config.data.hop_length,
-                "f_min": config.data.fmin,
-                "f_max": config.data.fmax,
+                "n_mels": config.data_processing.n_mels,
+                "n_fft": config.data_processing.nfft,
+                "hop_length": config.data_processing.hop_length,
+                "f_min": config.data_processing.fmin,
+                "f_max": config.data_processing.fmax,
             },
         )
 
@@ -78,10 +79,10 @@ class MonoToThreeChannel(torch.nn.Module):
         # Chromagram from Mel Spectrogram
         chroma = generate_chroma_feature(
             waveform,
-            sr=self.config.data.sample_rate,
-            n_fft=self.config.data.nfft,
-            hop_length=self.config.data.hop_length,
-            n_chroma=self.config.data.n_mels,
+            sr=self.config.data_processing.sample_rate,
+            n_fft=self.config.data_processing.nfft,
+            hop_length=self.config.data_processing.hop_length,
+            n_chroma=self.config.data_processing.n_mels,
         ).unsqueeze(0)
 
         # Normalize features to the same scale

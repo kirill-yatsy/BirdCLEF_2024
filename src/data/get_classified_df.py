@@ -3,7 +3,7 @@ import pandas as pd
 import glob
 import os
 
-from src.config import ConfigHolder
+from src.config import CONFIG
 
 
 def get_classified_df(save: bool = False) -> pd.DataFrame:
@@ -15,7 +15,7 @@ def get_classified_df(save: bool = False) -> pd.DataFrame:
         ) 
 
     df = pd.DataFrame()
-    birdclefs = ConfigHolder.config.data.splitted_datasets.birdclefs
+    birdclefs = CONFIG.datasets.birdclefs
     for year in birdclefs:
         path = birdclefs[year]
         new_df = create_dataframe(path)

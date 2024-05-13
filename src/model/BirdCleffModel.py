@@ -4,10 +4,10 @@ from torch import optim, nn, utils, Tensor
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 import lightning as L
-import torch
-from src.config import BirdConfig, ConfigHolder
+import torch 
 from sklearn.metrics import accuracy_score, classification_report, f1_score
 
+from src.configs.base_config import BirdConfig
 from src.metrics.AccuracyPerClass import AccuracyPerClass
 from src.model.get_callbacks import BirdCleffModelConfig, get_callbacks
 from src.model.get_loss import get_loss

@@ -2,7 +2,8 @@ import librosa
 import torch
 import torchaudio
 
-from src.config import BirdConfig, ConfigHolder
+from src.configs.base_config import BirdConfig
+ 
 
 
 def standardize_waveform(config: BirdConfig, waveform: torch.Tensor, sample_rate: int) -> torch.Tensor:
@@ -11,10 +12,10 @@ def standardize_waveform(config: BirdConfig, waveform: torch.Tensor, sample_rate
         # waveform = librosa.to_mono(waveform.numpy())
         waveform = torch.mean(waveform, dim=0, keepdim=True) 
         # waveform = torch.tensor(waveform)
-    if sample_rate != config.data.sample_rate:
-        waveform = torchaudio.transforms.Resample( sample_rate, config.data.sample_rate, dtype=waveform.dtype)(waveform)
+    if sample_rate != config.data_processing.sample_rate:
+        waveform = torchaudio.transforms.Resample( sample_rate, config.data_processing.sample_rate, dtype=waveform.dtype)(waveform)
         # waveform = librosa.resample(
-        #     waveform.numpy(), sample_rate, config.data.sample_rate
+        #     waveform.numpy(), sample_rate, config.data_processing.sample_rate
         # )
         # waveform = torch.tensor(waveform)
 
@@ -29,7 +30,7 @@ def get_rendom_clip(config: BirdConfig, waveform, sample_rate, frame_size=15) ->
     :param frame_size: size of the clip in seconds
     :return: frame_size second clip
     """
-    short_audio_stategy = config.data.short_audio_stategy
+    short_audio_stategy = config.data_processing.short_audio_stategy
 
     duration = len(waveform[0]) / sample_rate
 

@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch
 from lightning.pytorch.callbacks import DeviceStatsMonitor
 
-from src.config import BirdConfig, ConfigHolder
+from src.config import CONFIG 
 from src.model.BirdCleffModel import BirdCleffModel
 from torch import optim, nn, utils, Tensor
 from torchvision.transforms import ToTensor
@@ -25,26 +25,26 @@ from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import NeptuneLogger
 import neptune
 
-def train(config: BirdConfig):
-    torch.set_float32_matmul_precision(config.train.float32_matmul_precision)
+def train():
+    torch.set_float32_matmul_precision(CONFIG.train.float32_matmul_precision)
     # wandb_logger = WandbLogger(project="bird_clef_2024", id=config.id)
     neptune_logger = NeptuneLogger(
         project="kirill.yatsy/birdclef-2024",
-        name=config.id,
+        name=CONFIG.id,
         api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2Zjc0N2I0NC02Mjk4LTQ5ZDYtODljMy0yZGMwNTYzZDNhODcifQ==",
         log_model_checkpoints=False, 
     )
 
-    df, train_loader, val_loader = get_data_loaders(config)
+    df, train_loader, val_loader = get_data_loaders(CONFIG)
     num_classes = len(df["species"].unique())
 
-    model_wrapper = BirdCleffModel(config, df, num_classes)
+    model_wrapper = BirdCleffModel(CONFIG, df, num_classes)
 
     trainer = L.Trainer(
-        max_epochs=config.train.epoch_number,
+        max_epochs=CONFIG.train.epoch_number,
         logger=neptune_logger,
-        fast_dev_run=config.train.fast_dev_run,
-        gradient_clip_val=0.5,
+        fast_dev_run=CONFIG.train.fast_dev_run,
+        gradient_clip_val=CONFIG.train.gradient_clip_val,
         # limit_train_batches=0.1,
         # limit_val_batches=0.1,
     )
@@ -52,5 +52,9 @@ def train(config: BirdConfig):
         model_wrapper,
         train_loader,
         val_dataloaders=val_loader,
-        # ckpt_path=config.train.checkpoint_path if config.train.checkpoint_path else None,
+        ckpt_path=CONFIG.train.checkpoint_path,
     )
+
+
+if __name__ == "__main__":
+    train()
