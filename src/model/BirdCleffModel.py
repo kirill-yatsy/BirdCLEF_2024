@@ -7,6 +7,7 @@ import lightning as L
 import torch 
 from sklearn.metrics import accuracy_score, classification_report, f1_score
 
+from src.config import CONFIG
 from src.configs.base_config import BirdConfig
 from src.metrics.AccuracyPerClass import AccuracyPerClass
 from src.model.get_callbacks import BirdCleffModelConfig, get_callbacks
@@ -18,7 +19,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 import torchmetrics
 import timm
 import wandb
-
+import numpy as np
 
 class SpatialAttentionModule(nn.Module):
     def __init__(self, in_channels):
@@ -40,11 +41,14 @@ class Model(nn.Module):
             pretrained=True,
             num_classes=0,
             global_pool="",
-            in_chans=3,
+            in_chans=CONFIG.model.in_channels,
         )
 
         # Remove the original classification head of the backbone
         self.backbone.classifier = nn.Identity()
+        if (CONFIG.model.freeze_backbone):
+            for param in self.backbone.parameters():
+                param.requires_grad = False
 
         self.attention = SpatialAttentionModule(self.backbone.num_features)
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
@@ -60,17 +64,16 @@ class Model(nn.Module):
 
 
 class BirdCleffModel(L.LightningModule):
-    def __init__(self, config: BirdConfig, df, num_classes):
+    def __init__(self, df, num_classes):
         super().__init__()
 
         self.model = Model(
-            backbone_name=config.train.timm_model, num_classes=num_classes
+            backbone_name=CONFIG.train.timm_model, num_classes=num_classes
         )
         # self.validation_step_outputs = torch.tensor([])
         self.loss = get_loss()
         self.df = df
-        self.num_classes = num_classes
-        self.config = config
+        self.num_classes = num_classes 
          
         # targetToLabelMapper = dict(enumerate(self.df["species"].unique()))
 
@@ -86,6 +89,10 @@ class BirdCleffModel(L.LightningModule):
             "y_hat": torch.tensor([]),
             "y": torch.tensor([]),
         }
+
+    # def on_load_checkpoint(self, checkpoint):
+    #     checkpoint["optimizer_states"] = []
+    #     self.loss = nn.CrossEntropyLoss()
 
     # def init_step_outputs(self):
     #     self.training_current_step_outputs = {"y_hat": torch.tensor([]), "y": torch.tensor([])}
@@ -118,6 +125,14 @@ class BirdCleffModel(L.LightningModule):
         y = y.long()
         y_hat = self(x)
 
+        # with open('y.npy', 'wb') as f:
+        #     np.save(f, y.cpu().numpy()) 
+        # with open('y_hat.npy', 'wb') as f:
+        #     np.save(f, y_hat.cpu().numpy())
+        # save y_hat and y to file
+        # y_hat.cpu().numpy().tofile("y_hat.txt")
+        # y.cpu().numpy().tofile("y.txt")
+        
         # append the y_hat and y to the validation_step_outputs
         # concat the y_hat and y to the validation_epoch_outputs
         self.validation_epoch_outputs["y_hat"] = torch.cat(
@@ -128,6 +143,8 @@ class BirdCleffModel(L.LightningModule):
         )
 
         loss = self.loss(y_hat, y)
+
+        
         self.log("val_loss", loss)
 
         return {
@@ -143,7 +160,7 @@ class BirdCleffModel(L.LightningModule):
         self.init_epoch_outputs()
 
     def configure_callbacks(self):
-        return get_callbacks(self.config)
+        return get_callbacks()
 
     def configure_optimizers(self):
         optimizer = get_optimizer(self.model)
@@ -152,8 +169,8 @@ class BirdCleffModel(L.LightningModule):
             "lr_scheduler": {
                 "scheduler": optim.lr_scheduler.StepLR(
                     optimizer,
-                    step_size=self.config.scheduler.step_size,
-                    gamma=self.config.scheduler.gamma,
+                    step_size=CONFIG.scheduler.step_size,
+                    gamma=CONFIG.scheduler.gamma,
                 ),
                 "monitor": "val_loss",
                 "frequency": 1,

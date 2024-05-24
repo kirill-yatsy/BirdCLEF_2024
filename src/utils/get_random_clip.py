@@ -8,16 +8,9 @@ from src.configs.base_config import BirdConfig
 
 def standardize_waveform(config: BirdConfig, waveform: torch.Tensor, sample_rate: int) -> torch.Tensor:
     if len(waveform) > 1:
-        
-        # waveform = librosa.to_mono(waveform.numpy())
-        waveform = torch.mean(waveform, dim=0, keepdim=True) 
-        # waveform = torch.tensor(waveform)
+        waveform = torch.mean(waveform, dim=0, keepdim=True)
     if sample_rate != config.data_processing.sample_rate:
         waveform = torchaudio.transforms.Resample( sample_rate, config.data_processing.sample_rate, dtype=waveform.dtype)(waveform)
-        # waveform = librosa.resample(
-        #     waveform.numpy(), sample_rate, config.data_processing.sample_rate
-        # )
-        # waveform = torch.tensor(waveform)
 
     return waveform
 

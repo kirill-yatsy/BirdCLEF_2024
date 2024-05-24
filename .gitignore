@@ -169,3 +169,9 @@ bird_clef_2024
 models
 checkpoints
 .neptune
+birdclef_2023_data_part1
+model.*
+test.onnx
+data/processed/*
+model2.*
+test_www.*

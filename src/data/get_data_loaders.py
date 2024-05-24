@@ -54,6 +54,7 @@ def get_data_loaders(config: BirdConfig):
     train_sampler = StratifiedSampler(train_index)
     val_sampler = StratifiedSampler(val_index)
 
+ 
     train_loader = DataLoader(
         dataset,
         batch_size=config.train.batch_size,

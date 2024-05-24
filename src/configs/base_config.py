@@ -12,18 +12,25 @@ class ShortAudioStategy(enum.Enum):
 @dataclass
 class SplittedDatasets:
     birdclefs: dict[str, str]
-
+    # add optional birdclefs_fine_tune field
+    birdclefs_fine_tune: dict[str, str] = None
 
 @dataclass
+class ModelConfig:
+    in_channels: int
+    freeze_backbone: bool
+
+ 
+@dataclass
 class DataProcessing:
-    sample_rate: int
-    frame_length: int
-    n_mels: int
-    nfft: int
-    hop_length: int
-    fmax: int
-    fmin: int
-    top_db: int
+    sample_rate: int = 32000
+    frame_length: int = 10
+    n_mels: int = 128
+    nfft: int = 2048
+    hop_length: int = 512
+    fmax: int = 16000
+    fmin: int = 0
+    top_db: int = 80
 
     short_audio_stategy: enum.Enum = "cut_first_10_percent_and_add_to_track"
 
@@ -42,9 +49,10 @@ class TrainType:
     float32_matmul_precision: str
     save_model_path: str 
     save_model_every_epoch_overwrite: bool
-    save_model_every_epoch_keep_last: int
-    checkpoint_path: str
+    save_model_every_epoch_keep_last: int 
     gradient_clip_val: float
+    fine_tune: bool
+    checkpoint_path: str = None
 
 
 @dataclass
@@ -63,3 +71,5 @@ class BirdConfig:
     train: TrainType
     scheduler: SchedulerType
     datasets: SplittedDatasets
+    augmentations: list[any]
+    model: ModelConfig

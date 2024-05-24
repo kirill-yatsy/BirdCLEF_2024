@@ -6,8 +6,8 @@ from torchaudio import transforms
 import numpy as np
 import torch.nn as nn
  
-from src.configs.base_config import BirdConfig
-from src.utils.get_spectrogram_transforms import get_spectrogram_transforms
+from src.config import CONFIG
+from src.configs.base_config import BirdConfig 
 from src.utils.get_random_clip import get_rendom_clip, standardize_waveform
 
 audio_cache = {}
@@ -35,6 +35,6 @@ class BirdClefDataset(Dataset):
             1,
             self.config.data_processing.sample_rate * self.config.data_processing.frame_length,
         )
-        spec = get_spectrogram_transforms(self.config)(waveform)
+        spec = CONFIG.augmentations(waveform)
         assert len(spec.shape) == 3
         return (waveform, target, sample_rate, spec)
