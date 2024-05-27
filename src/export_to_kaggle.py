@@ -19,11 +19,15 @@ def export_to_kaggle():
 
 def export_to_onnx():
     df, train_loader, val_loader = get_data_loaders(CONFIG)
-    model = BirdCleffModel.load_from_checkpoint(
-        "checkpoints/efficientnet_b0/model-epoch=08-val_loss=3.50.ckpt",
+    model = BirdCleffModel( 
         df=df,
         num_classes=182,
-    )
+    ).cuda()
+    # model = BirdCleffModel.load_from_checkpoint(
+    #     "checkpoints/efficientnet_b0/model-epoch=08-val_loss=3.50.ckpt",
+    #     df=df,
+    #     num_classes=182,
+    # )
     loader = iter(train_loader)
     _, target, _, spec = next(loader)
     print(spec.shape)
@@ -81,7 +85,7 @@ def export_to_jit():
 
 if __name__ == "__main__":
     export_to_onnx()
-    export_to_jit()
+    # export_to_jit()
     # small_image = torch.randn(1, 3, 224, 224)
     # big_image = torch.randn(1, 3, 3333, 2324)
     # df, train_loader, val_loader = get_data_loaders(CONFIG)

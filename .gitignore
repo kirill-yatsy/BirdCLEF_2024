@@ -175,3 +175,4 @@ test.onnx
 data/processed/*
 model2.*
 test_www.*
+xeno-canto-extended

@@ -31,6 +31,7 @@ class DataProcessing:
     fmax: int = 16000
     fmin: int = 0
     top_db: int = 80
+    csv_path: str = "data/processed/train_df.csv"
 
     short_audio_stategy: enum.Enum = "cut_first_10_percent_and_add_to_track"
 

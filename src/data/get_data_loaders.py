@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm 
 from src.configs.base_config import BirdConfig
@@ -24,7 +25,7 @@ class StratifiedSampler(torch.utils.data.Sampler):
     
 
 def get_data_loaders(config: BirdConfig):
-    df = get_classified_df(config)  
+    df = pd.read_csv(config.data_processing.csv_path)
     
     # Counting the instances per class
     class_counts = df['y'].value_counts()

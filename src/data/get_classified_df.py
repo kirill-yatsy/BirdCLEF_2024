@@ -21,11 +21,9 @@ def get_classified_df( save: bool = False) -> pd.DataFrame:
     for year in birdclefs:
         path = birdclefs[year]
         new_df = create_dataframe(path)
-        df = pd.concat([df, new_df])
+        df = pd.concat([df, new_df]).reset_index(drop=True)
 
-    df["species"] = df["species"].astype("category")
-    # df["y"] = None
-    # df = pd.merge(df, mapper, on="species", how="left") 
+    df["species"] = df["species"].astype("category") 
      
     df["y"] = df["species"].cat.codes
   
@@ -43,7 +41,7 @@ if __name__ == "__main__":
     ssss = df.groupby("y", as_index=True).agg({"species": "first"}).reset_index()
     # # # # select only species and y columns
     classes = ssss[["species", "y"]] 
-    classes.to_csv("data/processed/fine_tune_mapper.csv", index=False)
+    # classes.to_csv("data/processed/fine_tune_mapper.csv", index=False)
     # print(classes[classes["y"] == 687])
     # print(df.head())
     # old_df = pd.read_csv("data/processed/files_old.csv")[]

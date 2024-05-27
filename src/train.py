@@ -37,14 +37,16 @@ def train():
 
     df, train_loader, val_loader = get_data_loaders(CONFIG)
     num_classes = len(df["species"].unique())
+    print(f"Number of classes: {num_classes}")
 
-    model_wrapper = BirdCleffModel(df, 926)
+    model_wrapper = BirdCleffModel(df, num_classes) 
 
     trainer = L.Trainer( 
         max_epochs=CONFIG.train.epoch_number,
         logger=neptune_logger,
         fast_dev_run=CONFIG.train.fast_dev_run,
         gradient_clip_val=CONFIG.train.gradient_clip_val, 
+        # accelerator="cpu",
     )
     trainer.fit(
         model_wrapper,

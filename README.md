@@ -18,6 +18,12 @@ kaggle competitions download -c birdclef-2021
 
 unzip birdclef-2021.zip -d data/birdclef-2021
 
+kaggle datasets download -d nomorevotch/xeno-canto-bird-recordings-extended-a-m-32khz-ogg
+kaggle datasets download -d nomorevotch/xeno-canto-bird-recordings-extended-n-z-32khz-ogg
+
+unzip nomorevotch/xeno-canto-bird-recordings-extended-a-m-32khz-ogg.zip -d data/xeno-canto-extended
+unzip nomorevotch/xeno-canto-bird-recordings-extended-n-z-32khz-ogg.zip -d data/xeno-canto-extended
+
 ```
 
 

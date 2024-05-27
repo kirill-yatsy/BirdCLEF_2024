@@ -121,4 +121,16 @@ class NormalizeData(torch.nn.Module):
             return x
         return (x - min_val) / (max_val - min_val)
     
- 
+
+class MixUpAugmentation(nn.Module):
+    def __init__(self, alpha=1.0):
+        super(MixUpAugmentation, self).__init__()
+        self.alpha = alpha
+
+    def forward(self, x, y):
+        lam = np.random.beta(self.alpha, self.alpha)
+        batch_size = x.size()[0]
+        index = torch.randperm(batch_size)
+        mixed_x = lam * x + (1 - lam) * x[index, :]
+        y_a, y_b = y, y[index]
+        return mixed_x, y_a, y_b, lam

@@ -39,6 +39,20 @@ class F1Callback(Callback):
             task="multiclass", num_classes=pl_module.num_classes
         )
 
+    def on_train_batch_end(
+        self,
+        trainer: L.Trainer,
+        pl_module: L.LightningModule,
+        outputs: STEP_OUTPUT,
+        batch: Any,
+        batch_idx: int,
+    ) -> None:
+        f1 = self.f1(
+            pl_module.training_epoch_outputs["y_hat"],
+            pl_module.training_epoch_outputs["y"],
+        )
+        trainer.logger.log_metrics({"train_batch_f1": f1.item()})
+
     def on_train_epoch_end(
         self, trainer: L.Trainer, pl_module: BirdCleffModelConfig
     ) -> None: 
@@ -46,7 +60,7 @@ class F1Callback(Callback):
             pl_module.training_epoch_outputs["y_hat"],
             pl_module.training_epoch_outputs["y"],
         )
-        trainer.logger.log_metrics({"train_f1": f1.item()})
+        trainer.logger.log_metrics({"train_epoch_f1": f1.item()})
 
     def on_validation_epoch_end(
         self, trainer: L.Trainer, pl_module: BirdCleffModelConfig
@@ -55,7 +69,7 @@ class F1Callback(Callback):
             pl_module.validation_epoch_outputs["y_hat"],
             pl_module.validation_epoch_outputs["y"],
         )
-        trainer.logger.log_metrics({"val_f1": f1.item()})
+        trainer.logger.log_metrics({"val_epoch_f1": f1.item()})
 
 
 class AccuracyCallback(Callback):
