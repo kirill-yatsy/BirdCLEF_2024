@@ -35,6 +35,6 @@ class BirdClefDataset(Dataset):
             1,
             self.config.data_processing.sample_rate * self.config.data_processing.frame_length,
         )
-        spec = CONFIG.augmentations(waveform)
+        spec = CONFIG.augmentations.sequence(waveform)
         assert len(spec.shape) == 3
         return (waveform, target, sample_rate, spec)

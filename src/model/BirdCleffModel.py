@@ -23,6 +23,9 @@ import wandb
 import numpy as np
 from torchvision.transforms import v2
 
+import torch.nn.functional as F
+
+ 
 class SpatialAttentionModule(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
@@ -34,7 +37,28 @@ class SpatialAttentionModule(nn.Module):
         attention_map = self.sigmoid(attention_map)  # Normalize to range [0, 1]
         return x * attention_map
 
+# Learn to choose between Max Pooling and Average Pooling
+class GeMPooling(nn.Module):
+    def __init__(self, p=3, eps=1e-6):
+        super(GeMPooling, self).__init__()
+        self.p = nn.Parameter(torch.ones(1) * p)
+        self.eps = eps
 
+    def forward(self, x):
+        return torch.nn.functional.avg_pool2d(x.clamp(min=self.eps).pow(self.p), (x.size(-2), x.size(-1))).pow(1.0 / self.p)
+
+class HybridPooling(nn.Module):
+    def __init__(self, p=3, eps=1e-6):
+        super(HybridPooling, self).__init__()
+        self.p = nn.Parameter(torch.ones(1) * p)
+        self.eps = eps
+
+    def forward(self, x):
+        avg_pool = torch.nn.functional.avg_pool2d(x, (x.size(-2), x.size(-1)))
+        max_pool = torch.nn.functional.max_pool2d(x, (x.size(-2), x.size(-1)))
+        gem_pool = torch.nn.functional.avg_pool2d(x.clamp(min=self.eps).pow(self.p), (x.size(-2), x.size(-1))).pow(1.0 / self.p)
+        return avg_pool + max_pool + gem_pool
+    
 class Model(nn.Module):
     def __init__(self, backbone_name, num_classes):
         super().__init__()
@@ -53,7 +77,7 @@ class Model(nn.Module):
                 param.requires_grad = False
 
         self.attention = SpatialAttentionModule(self.backbone.num_features)
-        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.pool = HybridPooling()
         self.head = nn.Linear(self.backbone.num_features, num_classes)
         self.softmax = nn.Softmax(dim=1)
 
@@ -78,7 +102,10 @@ class BirdCleffModel(L.LightningModule):
         self.loss = get_loss()
         self.df = df
         self.num_classes = num_classes 
+
         self.mixup = v2.MixUp(num_classes=num_classes, alpha=0.5)
+        self.cutmix = v2.CutMix(num_classes=num_classes) 
+
 
         self.init_epoch_outputs()
  
@@ -99,30 +126,39 @@ class BirdCleffModel(L.LightningModule):
     def training_step(self, batch, batch_idx):
         _, y, _, x = batch
         y = y.long()
-
-        x,y = self.mixup(x, y)
-        y_hat = self(x)
+        if CONFIG.augmentations.useMixup:
+            cutmix_or_mixup = v2.RandomChoice([self.cutmix, self.mixup])
+            x,y = cutmix_or_mixup(x, y)
         
 
+        y_hat = self(x)
+        # y = y.long()
+        y_hat = y_hat.float()
+        loss = self.loss(y_hat, y)
+        self.log("train_loss", loss)
+
+        if CONFIG.augmentations.useMixup:
+            y = y.argmax(dim=1)
         # append the y_hat and y to the training_epoch_outputs
         self.training_epoch_outputs["y_hat"] = torch.cat(
-            (self.training_epoch_outputs["y_hat"], y_hat.argmax(dim=1).cpu())
+            (self.training_epoch_outputs["y_hat"], y_hat.cpu())
         )
         self.training_epoch_outputs["y"] = torch.cat(
-            (self.training_epoch_outputs["y"], y.argmax(dim=1).cpu())
+            (self.training_epoch_outputs["y"], y.cpu())
         )
 
-        loss = self.loss(y_hat, y)
-        self.log("train_loss", loss) 
+ 
 
-        return {"loss": loss, "y_hat": y_hat.cpu(), "y": y.argmax(dim=1).cpu()}
+        return {"loss": loss, "y_hat": y_hat.cpu(), "y": y.cpu()}
  
 
     def validation_step(self, batch, batch_idx):
-        _, y, _, x = batch
-        y = y.long()
-        y_hat = self(x)
-
+        _, y, _, x = batch 
+        y = y.float()
+        y_hat = self(x) 
+        y_hat = y_hat 
+        
+        
         self.validation_epoch_outputs["y_hat"] = torch.cat(
             (self.validation_epoch_outputs["y_hat"], y_hat.cpu())
         )
@@ -130,7 +166,7 @@ class BirdCleffModel(L.LightningModule):
             (self.validation_epoch_outputs["y"], y.cpu())
         )
 
-        loss = self.loss(y_hat, y)
+        loss = self.loss(y_hat.argmax(dim=1).float(), y.float())
 
         
         self.log("val_loss", loss)
@@ -153,11 +189,7 @@ class BirdCleffModel(L.LightningModule):
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
-                "scheduler": optim.lr_scheduler.StepLR(
-                    optimizer,
-                    step_size=CONFIG.scheduler.step_size,
-                    gamma=CONFIG.scheduler.gamma,
-                ),
+                "scheduler": torch.optim.lr_scheduler.CosineAnnealingLR( optimizer, T_max=CONFIG.train.epoch_number ),
                 "monitor": "val_loss",
                 "frequency": 1,
             },

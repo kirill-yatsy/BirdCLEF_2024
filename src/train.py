@@ -33,6 +33,7 @@ def train():
         name=CONFIG.id,
         api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2Zjc0N2I0NC02Mjk4LTQ5ZDYtODljMy0yZGMwNTYzZDNhODcifQ==",
         log_model_checkpoints=False, 
+        
     )
 
     df, train_loader, val_loader = get_data_loaders(CONFIG)
@@ -44,7 +45,9 @@ def train():
     trainer = L.Trainer( 
         max_epochs=CONFIG.train.epoch_number,
         logger=neptune_logger,
+        # logger=False,
         fast_dev_run=CONFIG.train.fast_dev_run,
+        # fast_dev_run=True,
         gradient_clip_val=CONFIG.train.gradient_clip_val, 
         # accelerator="cpu",
     )

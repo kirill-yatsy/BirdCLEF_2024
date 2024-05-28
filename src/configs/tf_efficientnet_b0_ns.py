@@ -10,6 +10,7 @@ from src.augmentations.get_spectrogram_augmentations import (
     NormalizeData,
 )
 from src.configs.base_config import (
+    Augmentations,
     BirdConfig,
     DataProcessing,
     ModelConfig,
@@ -45,13 +46,13 @@ EFFICIENTNET_CONFIG = BirdConfig(
     data_processing=DataProcessing(),
     train=TrainType(
         fast_dev_run=False,
-        epoch_number=20,
+        epoch_number=100,
         batch_size=128,
         timm_model="tf_efficientnet_b0_ns",
         optimizer="adam",
         lr=0.001,
-        num_workers=8,
-        checkpoint_path=None,
+        num_workers=10,
+        checkpoint_path="checkpoints/efficientnet_b0/model-fine-tune-epoch=13-train_loss=0.69.ckpt",
         float32_matmul_precision="high",
         save_model_path="checkpoints/efficientnet_b0",
         save_model_every_epoch_overwrite=True,
@@ -66,23 +67,8 @@ EFFICIENTNET_CONFIG = BirdConfig(
     datasets=SplittedDatasets(
         birdclefs=SOURCES
     ),
-    augmentations=torch.nn.Sequential(
-        *[
-            MonoToThreeChannel(
-                sample_rate=32000, 
-                n_mels=128,
-                n_fft=2048,
-                hop_length=hop_length, 
-                top_db=100, 
-                f_min=40,
-                f_max=15000, 
-                n_mfcc=20,
-                n_chroma=12
-            ),
-            NormalizeData(),
-            torchaudio.transforms.FrequencyMasking(freq_mask_param=FRAME_LENGTH),
-            torchaudio.transforms.TimeMasking(time_mask_param=FRAME_LENGTH),
-        ]
+    augmentations=Augmentations(
+        useMixup=True,
     ),
 
     model=ModelConfig(in_channels=3, freeze_backbone=FINE_TUNE),

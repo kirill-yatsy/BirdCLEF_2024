@@ -1,9 +1,14 @@
+import torch
+import torchaudio
 import yaml
 from omegaconf import DictConfig, OmegaConf
 import hydra
 from dataclasses import dataclass
 import enum
+from torchvision.transforms import v2
+from src.augmentations.get_spectrogram_augmentations import MonoToThreeChannel, NoOpTransform, NormalizeData, RandomGain, RandomGainTransition, RandomGaussianNoise, RandomGaussianSNR, RandomLowPassFilter, RandomPitchShift
 
+FRAME_LENGTH = 15
 
 class ShortAudioStategy(enum.Enum):
     MERGE_CUTTED = "cut_first_10_percent_and_add_to_track"
@@ -63,6 +68,54 @@ class SchedulerType:
 
 
 @dataclass
+class Augmentations:
+    useMixup: bool = True
+    mixup_alpha: float = 1
+
+    # sequence: torch.nn.Sequential = torch.nn.Sequential(
+    #     *[
+    #         # torchaudio.transforms.PitchShift(32000, 4),
+    #         # RandomPitchShift(32000, 4),
+    #         # one of 
+
+    #         MonoToThreeChannel(
+    #             sample_rate=32000, 
+    #             n_mels=128,
+    #             n_fft=2048,
+    #             hop_length=512, 
+    #             top_db=80, 
+    #             f_min=0,
+    #             f_max=16000, 
+    #             n_mfcc=20,
+    #             n_chroma=12
+    #         ),
+    #         NormalizeData(),
+    #         torchaudio.transforms.FrequencyMasking(freq_mask_param=FRAME_LENGTH),
+    #         torchaudio.transforms.TimeMasking(time_mask_param=FRAME_LENGTH),
+    #     ]
+    # )
+    sequence: torch.nn.Sequential = v2.Compose([ 
+        v2.RandomChoice([RandomGain(), RandomGainTransition()]),
+        v2.RandomChoice([RandomGaussianNoise(), RandomGaussianSNR()]),
+        v2.RandomChoice([RandomLowPassFilter(), NoOpTransform()]), 
+        MonoToThreeChannel(
+            sample_rate=32000, 
+            n_mels=128,
+            n_fft=2048,
+            hop_length=512, 
+            top_db=80, 
+            f_min=0,
+            f_max=16000, 
+            n_mfcc=20,
+            n_chroma=12
+        ),
+        NormalizeData(),
+        torchaudio.transforms.FrequencyMasking(freq_mask_param=FRAME_LENGTH),
+        torchaudio.transforms.TimeMasking(time_mask_param=FRAME_LENGTH),
+    
+    ])
+
+@dataclass
 class BirdConfig:
     id: str
     seed: int
@@ -72,5 +125,6 @@ class BirdConfig:
     train: TrainType
     scheduler: SchedulerType
     datasets: SplittedDatasets
-    augmentations: list[any]
-    model: ModelConfig
+    augmentations: Augmentations
+    model: ModelConfig 
+

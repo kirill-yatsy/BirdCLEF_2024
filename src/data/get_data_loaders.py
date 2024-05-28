@@ -25,8 +25,8 @@ class StratifiedSampler(torch.utils.data.Sampler):
     
 
 def get_data_loaders(config: BirdConfig):
-    df = pd.read_csv(config.data_processing.csv_path)
-    
+    # df = pd.read_csv(config.data_processing.csv_path)
+    df = get_classified_df()
     # Counting the instances per class
     class_counts = df['y'].value_counts()
 
