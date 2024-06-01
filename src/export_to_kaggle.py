@@ -4,7 +4,7 @@ from src.model.BirdCleffModel import BirdCleffModel
 import torch.onnx
 from torchsummary import summary
 import timm
-
+import pandas as pd
 
 def export_to_kaggle():
     df, train_loader, val_loader = get_data_loaders(CONFIG)
@@ -18,24 +18,28 @@ def export_to_kaggle():
 
 
 def export_to_onnx():
-    df, train_loader, val_loader = get_data_loaders(CONFIG)
+    df = pd.read_csv(CONFIG.data_processing.fine_tune_csv_path) 
+
+
+    # df, train_loader, val_loader = get_data_loaders(CONFIG)
     model = BirdCleffModel( 
         df=df,
         num_classes=182,
     ).cuda()
-    # model = BirdCleffModel.load_from_checkpoint(
-    #     "checkpoints/efficientnet_b0/model-epoch=08-val_loss=3.50.ckpt",
-    #     df=df,
-    #     num_classes=182,
-    # )
-    loader = iter(train_loader)
-    _, target, _, spec = next(loader)
-    print(spec.shape)
+    model = BirdCleffModel.load_from_checkpoint(
+        "checkpoints/efficientnet_b0_v2/model-fine-tune1-epoch=28-val_loss=-8306.35.ckpt",
+        df=df,
+        num_classes=182,
+    )
+    # loader = iter(train_loader)
+    # _, target, _, spec = next(loader)
+    # print(spec.shape)
 
     model.eval()
-    dummy_input = torch.randn(1,  spec.shape[1],  spec.shape[2], spec.shape[3])
-
-    print(summary(model, torch.randn( spec.shape[1],  spec.shape[2], spec.shape[3]).shape))
+    
+    dummy_input = torch.randn((1,  3, 128, 157))
+    print(dummy_input.shape)
+    print(summary(model, torch.randn((3, 128, 157)).shape))
     
     
     model.to("cpu")
@@ -56,32 +60,22 @@ def export_to_onnx():
 def export_to_jit():
     df, train_loader, val_loader = get_data_loaders(CONFIG)
     model = BirdCleffModel.load_from_checkpoint(
-        "checkpoints/efficientnet_b1/model-epoch=02-val_loss=2.64.ckpt",
+        "checkpoints/efficientnet_b0_v2/model-fine-tune1-epoch=28-val_loss=-8306.35.ckpt",
         df=df,
         num_classes=182,
     )
 
-    loader = iter(train_loader)
-    _, target, _, spec = next(loader)
-    print(spec.shape)
+    # loader = iter(train_loader)
+    # _, target, _, spec = next(loader)
+    # print(spec.shape)
 
 
     model.eval()
     model.to("cpu")
-    dummy_input = torch.randn(1,  spec.shape[1],  spec.shape[2], spec.shape[3])
+    dummy_input = torch.randn((1,  3, 128, 157)) 
     traced_model = torch.jit.trace(model.model, dummy_input)
     traced_model.save("model.pt")
-    model = timm.create_model(
-        "tf_efficientnet_b0_ns",
-        pretrained=True,
-        num_classes=182,
-        global_pool="avg",
-        in_chans=3,
-    )
-
-    model = model.eval()
-    traced_model = torch.jit.trace(model, dummy_input)
-    traced_model.save("test_www.pt")
+  
 
 if __name__ == "__main__":
     export_to_onnx()

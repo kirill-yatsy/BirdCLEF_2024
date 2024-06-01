@@ -51,7 +51,7 @@ class RandomGain(torch.nn.Module):
         return gain(waveform)
     
 class RandomGainTransition(torch.nn.Module):
-    def __init__(self, min_gain_db=-10, max_gain_db=10, duration=None):
+    def __init__(self, min_gain_db=-20, max_gain_db=20, duration=None):
         super(RandomGainTransition, self).__init__()
         self.min_gain_db = min_gain_db
         self.max_gain_db = max_gain_db
@@ -78,7 +78,7 @@ class RandomGaussianNoise(torch.nn.Module):
         return waveform + noise
     
 class RandomGaussianSNR(torch.nn.Module):
-    def __init__(self, min_snr_db=10, max_snr_db=30):
+    def __init__(self, min_snr_db=10, max_snr_db=40):
         super(RandomGaussianSNR, self).__init__()
         self.min_snr_db = min_snr_db
         self.max_snr_db = max_snr_db
@@ -113,7 +113,7 @@ class RandomGaussianSNR(torch.nn.Module):
 #         return waveform
     
 class RandomLowPassFilter(torch.nn.Module):
-    def __init__(self, min_cutoff_freq=1000, max_cutoff_freq=5000, sample_rate=32000):
+    def __init__(self, min_cutoff_freq=1000, max_cutoff_freq=6000, sample_rate=32000):
         super(RandomLowPassFilter, self).__init__()
         self.min_cutoff_freq = min_cutoff_freq
         self.max_cutoff_freq = max_cutoff_freq

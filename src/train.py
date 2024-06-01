@@ -50,13 +50,14 @@ def train():
         # fast_dev_run=True,
         gradient_clip_val=CONFIG.train.gradient_clip_val, 
         # accelerator="cpu",
+        # max_steps=5, 
     )
     trainer.fit(
         model_wrapper,
         train_loader,
         val_dataloaders=val_loader,
         ckpt_path=CONFIG.train.checkpoint_path,
-
+        
     )
 
 

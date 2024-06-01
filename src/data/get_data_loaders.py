@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm 
+from src.config import CONFIG
 from src.configs.base_config import BirdConfig
 from src.data.dataset import BirdClefDataset
 from src.data.get_classified_df import get_classified_df
@@ -25,8 +26,12 @@ class StratifiedSampler(torch.utils.data.Sampler):
     
 
 def get_data_loaders(config: BirdConfig):
-    # df = pd.read_csv(config.data_processing.csv_path)
-    df = get_classified_df()
+    if CONFIG.train.fine_tune:
+        df = pd.read_csv(config.data_processing.fine_tune_csv_path)
+    else:
+        df = pd.read_csv(config.data_processing.csv_path)
+
+    # df = get_classified_df() 
     # Counting the instances per class
     class_counts = df['y'].value_counts()
 
@@ -39,7 +44,7 @@ def get_data_loaders(config: BirdConfig):
 
     # Preparing the data for StratifiedShuffleSplit
     targets = filtered_df["y"]
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=CONFIG.seed)
     train_index, val_index = next(sss.split(X=np.zeros(len(targets)), y=targets))
 
     # Converting these indices to match the original dataframe indices
@@ -50,7 +55,7 @@ def get_data_loaders(config: BirdConfig):
     # train_index = train_index.union(single_instance_indices)
     # val_index = val_index.union(single_instance_indices)
  
-    dataset = BirdClefDataset( df, config)
+    dataset = BirdClefDataset(df, config)
 
     train_sampler = StratifiedSampler(train_index)
     val_sampler = StratifiedSampler(val_index)

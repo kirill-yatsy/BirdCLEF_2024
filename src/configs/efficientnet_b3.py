@@ -21,7 +21,7 @@ from src.configs.base_config import (
 
 FRAME_LENGTH = 15
 
-FINE_TUNE = False
+FINE_TUNE = True
 
 SOURCES = {
     "2024": "data/birdclef-2024/train_audio"
@@ -42,13 +42,13 @@ EFFICIENTNET_CONFIG_B3= BirdConfig(
     data_processing=DataProcessing(),
     train=TrainType(
         fast_dev_run=False,
-        epoch_number=20,
+        epoch_number=50,
         batch_size=64,
         timm_model="efficientnet_b3",
         optimizer="adam",
         lr=0.001,
         num_workers=8,
-        checkpoint_path="checkpoints/efficientnet_b3/model-fine-tune-epoch=02-train_loss=6.83.ckpt",
+        checkpoint_path="checkpoints/efficientnet_b3/model-epoch=21-train_loss=0.00.ckpt",
         float32_matmul_precision="high",
         save_model_path="checkpoints/efficientnet_b3",
         save_model_every_epoch_overwrite=True,
@@ -64,10 +64,10 @@ EFFICIENTNET_CONFIG_B3= BirdConfig(
         birdclefs=SOURCES
     ),
     augmentations=Augmentations(
-        useMixup=False,
+        useMixup=True,
     ),
 
-    model=ModelConfig(in_channels=3, freeze_backbone=FINE_TUNE),
+    model=ModelConfig(in_channels=3, freeze_backbone=False),
 
 )
  

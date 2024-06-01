@@ -156,7 +156,7 @@ def get_callbacks() -> List[L.Callback] | L.Callback:
             save_top_k=CONFIG.train.save_model_every_epoch_keep_last,
             mode="min",
             dirpath=CONFIG.train.save_model_path,
-            filename="model-{epoch:02d}-{val_loss:.2f}" if CONFIG.train.fine_tune else "model-fine-tune-{epoch:02d}-{train_loss:.2f}",
+            filename="model-fine-tune1-{epoch:02d}-{val_loss:.2f}" if CONFIG.train.fine_tune else "model-{epoch:02d}-{train_loss:.2f}",
         ),
         EarlyStopping(
             monitor="val_loss",

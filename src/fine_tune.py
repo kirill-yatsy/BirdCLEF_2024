@@ -25,14 +25,20 @@ from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import NeptuneLogger
 import neptune
 import os 
-
+import pandas as pd
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 
+def get_num_classes(df):
+    return len(df["species"].unique())
 
 
 def train():
     torch.set_float32_matmul_precision(CONFIG.train.float32_matmul_precision)
+
+    fine_tune_df = pd.read_csv(CONFIG.data_processing.fine_tune_csv_path) 
+    train_df = pd.read_csv(CONFIG.data_processing.csv_path)
+
     # wandb_logger = WandbLogger(project="bird_clef_2024", id=config.id)
     neptune_logger = NeptuneLogger(
         project="kirill.yatsy/birdclef-2024",
@@ -41,15 +47,16 @@ def train():
         log_model_checkpoints=False,
     )
 
-    df, train_loader, val_loader = get_data_loaders(CONFIG)
-    num_classes = len(df["species"].unique())
-
-    # model_wrapper = BirdCleffModel(df, num_classes)
-
     model_wrapper = BirdCleffModel.load_from_checkpoint(
-        CONFIG.train.checkpoint_path, df=df, num_classes=926
+        CONFIG.train.checkpoint_path, df=train_df, num_classes=926#get_num_classes(train_df)
     )
 
+    _, train_loader, val_loader = get_data_loaders(CONFIG)
+    num_classes = len(fine_tune_df["species"].unique()) 
+
+    model_wrapper.init_mixup_and_cutmix(
+        num_classes
+    )
     model_wrapper.model.head = torch.nn.Linear(
         model_wrapper.model.backbone.num_features, num_classes
     )

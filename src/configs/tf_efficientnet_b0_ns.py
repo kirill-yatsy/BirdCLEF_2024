@@ -18,14 +18,13 @@ from src.configs.base_config import (
     SplittedDatasets,
     TrainType,
 )
+from torchvision.transforms import v2
 
-FRAME_LENGTH = 15
+FRAME_LENGTH = 20
 
-FINE_TUNE = False
+FINE_TUNE = True
 
-SOURCES = {
-    "2024": "data/birdclef-2024/train_audio"
-}
+SOURCES = {"2024": "data/birdclef-2024/train_audio"}
 
 if not FINE_TUNE:
     SOURCES["2023"] = "data/birdclef-2023/train_audio"
@@ -52,11 +51,11 @@ EFFICIENTNET_CONFIG = BirdConfig(
         optimizer="adam",
         lr=0.001,
         num_workers=10,
-        checkpoint_path="checkpoints/efficientnet_b0/model-fine-tune-epoch=13-train_loss=0.69.ckpt",
+        checkpoint_path="checkpoints/efficientnet_b0_v2/model-epoch=55-train_loss=0.00.ckpt",
         float32_matmul_precision="high",
-        save_model_path="checkpoints/efficientnet_b0",
+        save_model_path="checkpoints/efficientnet_b0_v2",
         save_model_every_epoch_overwrite=True,
-        save_model_every_epoch_keep_last=5, 
+        save_model_every_epoch_keep_last=-1,
         gradient_clip_val=0.5,
         fine_tune=FINE_TUNE,
     ),
@@ -64,13 +63,28 @@ EFFICIENTNET_CONFIG = BirdConfig(
         step_size=1,
         gamma=0.1,
     ),
-    datasets=SplittedDatasets(
-        birdclefs=SOURCES
-    ),
+    datasets=SplittedDatasets(birdclefs=SOURCES),
     augmentations=Augmentations(
         useMixup=True,
+        # sequence=v2.Compose(
+        #     [
+        #         MonoToThreeChannel(
+        #             sample_rate=32000,
+        #             n_mels=128,
+        #             n_fft=2048,
+        #             hop_length=hop_length,
+        #             top_db=80,
+        #             f_min=0,
+        #             f_max=16000,
+        #             n_mfcc=20,
+        #             n_chroma=12,
+        #         ),
+        #         NormalizeData(),
+        #         torchaudio.transforms.FrequencyMasking(freq_mask_param=FRAME_LENGTH),
+        #         torchaudio.transforms.TimeMasking(time_mask_param=FRAME_LENGTH),
+        #     ]
+        # ),
     ),
-
     model=ModelConfig(in_channels=3, freeze_backbone=FINE_TUNE),
 )
 
