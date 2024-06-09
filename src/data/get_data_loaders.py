@@ -4,13 +4,8 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm 
 from src.config import CONFIG
 from src.configs.base_config import BirdConfig
-from src.data.dataset import BirdClefDataset
-from src.data.get_classified_df import get_classified_df
-from torch.utils.data import DataLoader
-from hydra.core.config_store import ConfigStore
-from hydra.core.hydra_config import HydraConfig
-from dataclasses import dataclass
-import hydra
+from src.data.dataset import BirdClefDataset 
+from torch.utils.data import DataLoader  
 
 import torch.utils.data 
 

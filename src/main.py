@@ -1,8 +1,7 @@
 import argparse 
 from src.config import CONFIG
 from src.train import train
-from omegaconf import DictConfig, OmegaConf
-import hydra
+ 
 from lightning.pytorch import Trainer, seed_everything
 
 

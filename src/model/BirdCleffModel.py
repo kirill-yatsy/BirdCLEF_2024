@@ -10,31 +10,31 @@ from sklearn.metrics import accuracy_score, classification_report, f1_score
 
 from src.config import CONFIG
 from src.configs.base_config import BirdConfig
-from src.metrics.AccuracyPerClass import AccuracyPerClass
+# from src.metrics.AccuracyPerClass import AccuracyPerClass
 from src.model.get_callbacks import BirdCleffModelConfig, get_callbacks
 from src.model.get_loss import get_loss
 from src.model.get_optimizer import get_optimizer
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import LearningRateMonitor
-from lightning.pytorch.callbacks import ModelCheckpoint
-import torchmetrics
-import timm
-import wandb
+from lightning.pytorch.callbacks import ModelCheckpoint 
+import timm 
 import numpy as np
 from torchvision.transforms import v2
 
 import torch.nn.functional as F
 
- 
 class SpatialAttentionModule(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, 1, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=1, padding=0 )
+        # self.conv2 = nn.Conv2d(in_channels, 1, kernel_size=1, padding=0)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        attention_map = self.conv(x)
-        attention_map = self.sigmoid(attention_map)  # Normalize to range [0, 1]
+        attention_map = self.conv1(x)
+        # attention_map = F.relu(attention_map)
+        # attention_map = self.conv2(attention_map)
+        attention_map = self.sigmoid(attention_map) 
         return x * attention_map
 
 # Learn to choose between Max Pooling and Average Pooling
@@ -45,20 +45,26 @@ class GeMPooling(nn.Module):
         self.eps = eps
 
     def forward(self, x):
-        return torch.nn.functional.avg_pool2d(x.clamp(min=self.eps).pow(self.p), (x.size(-2), x.size(-1))).pow(1.0 / self.p)
+        return  torch.mean(x.clamp(min=self.eps).pow(self.p), dim=(2, 3), keepdim=True).pow(1.0 / self.p) 
 
-class HybridPooling(nn.Module):
-    def __init__(self, p=3, eps=1e-6):
-        super(HybridPooling, self).__init__()
-        self.p = nn.Parameter(torch.ones(1) * p)
-        self.eps = eps
+class Head(nn.Module):
+    def __init__(self, in_features, num_classes):
+        super().__init__()
+        self.fc1 = nn.Linear(in_features, in_features)
+        self.fc2 = nn.Linear(in_features, num_classes)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.1)
+        self.batchnorm1 = nn.BatchNorm1d(in_features)  # Batch normalization after first FC layer
+        # self.batchnorm2 = nn.BatchNorm1d(num_classes)  # Batch normalization after second FC layer
 
     def forward(self, x):
-        avg_pool = torch.nn.functional.avg_pool2d(x, (x.size(-2), x.size(-1)))
-        max_pool = torch.nn.functional.max_pool2d(x, (x.size(-2), x.size(-1)))
-        gem_pool = torch.nn.functional.avg_pool2d(x.clamp(min=self.eps).pow(self.p), (x.size(-2), x.size(-1))).pow(1.0 / self.p)
-        return avg_pool + max_pool + gem_pool
-    
+        x = self.fc1(x)
+        x = self.batchnorm1(x)  # Batch normalization
+        x = self.relu(x)
+        x = self.fc2(x)
+        x = self.dropout(x)
+        return x
+
 class Model(nn.Module):
     def __init__(self, backbone_name, num_classes):
         super().__init__()
@@ -77,9 +83,12 @@ class Model(nn.Module):
                 param.requires_grad = False
 
         self.attention = SpatialAttentionModule(self.backbone.num_features)
-        self.pool = HybridPooling()
-        self.head = nn.Linear(self.backbone.num_features, num_classes)
-        self.softmax = nn.Softmax(dim=1)
+        self.pool = GeMPooling()
+        self.head = Head(self.backbone.num_features, num_classes)
+        # self.softmax = nn.Softmax(dim=1)
+
+    def reinintialize_head(self, num_classes):
+        self.head = Head(self.backbone.num_features, num_classes)
 
     def forward(self, x):
         x = self.backbone(x)
@@ -87,7 +96,7 @@ class Model(nn.Module):
         x = self.pool(x)
         x = x.flatten(1)
         x = self.head(x)
-        x = self.softmax(x)
+        # x = self.softmax(x)
         
         return x
 
@@ -100,14 +109,18 @@ class BirdCleffModel(L.LightningModule):
             backbone_name=CONFIG.train.timm_model, num_classes=num_classes
         )
         self.loss = get_loss()
-        self.df = df
-        self.num_classes = num_classes 
-
-        self.mixup = v2.MixUp(num_classes=num_classes, alpha=0.5)
-        self.cutmix = v2.CutMix(num_classes=num_classes) 
-
+        self.df = df 
+ 
 
         self.init_epoch_outputs()
+        self.init_new_num_classes(num_classes)
+
+    def init_new_num_classes(self, num_classes):
+        self.mixup = v2.MixUp(num_classes=num_classes, alpha=1.0)
+        self.cutmix = v2.CutMix(num_classes=num_classes)
+        self.model.reinintialize_head(num_classes)
+        self.num_classes = num_classes
+        
  
     def init_epoch_outputs(self):
         self.training_epoch_outputs = {
@@ -135,7 +148,7 @@ class BirdCleffModel(L.LightningModule):
         # y = y.long()
         y_hat = y_hat.float()
         loss = self.loss(y_hat, y)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
         if CONFIG.augmentations.useMixup:
             y = y.argmax(dim=1)
@@ -169,7 +182,7 @@ class BirdCleffModel(L.LightningModule):
         loss = self.loss(y_hat.argmax(dim=1).float(), y.float())
 
         
-        self.log("val_loss", loss)
+        self.log("val_loss", loss, on_step=True, on_epoch=True )
 
         return {
             "loss": loss,

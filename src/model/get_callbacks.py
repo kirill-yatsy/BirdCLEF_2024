@@ -12,8 +12,8 @@ import lightning as L
 import torch
 from enum import Enum
 from lightning.pytorch.utilities.types import STEP_OUTPUT
-from pl_bolts.callbacks import PrintTableMetricsCallback
-from pl_bolts.callbacks import TrainingDataMonitor
+# from pl_bolts.callbacks import PrintTableMetricsCallback
+# from pl_bolts.callbacks import TrainingDataMonitor
 
 from dataclasses import dataclass
 
@@ -158,12 +158,12 @@ def get_callbacks() -> List[L.Callback] | L.Callback:
             dirpath=CONFIG.train.save_model_path,
             filename="model-fine-tune1-{epoch:02d}-{val_loss:.2f}" if CONFIG.train.fine_tune else "model-{epoch:02d}-{train_loss:.2f}",
         ),
-        EarlyStopping(
-            monitor="val_loss",
-            patience=10,
-            verbose=True,
-            mode="min",
-        ), 
+        # EarlyStopping(
+        #     monitor="val_loss",
+        #     patience=10,
+        #     verbose=True,
+        #     mode="min",
+        # ), 
         F1Callback(),
         AccuracyCallback(),
         # ConfusionMatrixCallback(),

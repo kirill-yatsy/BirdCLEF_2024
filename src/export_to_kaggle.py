@@ -27,7 +27,7 @@ def export_to_onnx():
         num_classes=182,
     ).cuda()
     model = BirdCleffModel.load_from_checkpoint(
-        "checkpoints/efficientnet_b0_v2/model-fine-tune1-epoch=28-val_loss=-8306.35.ckpt",
+        "checkpoints/efficientnet_b3/model-fine-tune1-epoch=29-val_loss=-8169.08.ckpt",
         df=df,
         num_classes=182,
     )
@@ -39,7 +39,7 @@ def export_to_onnx():
     
     dummy_input = torch.randn((1,  3, 128, 157))
     print(dummy_input.shape)
-    print(summary(model, torch.randn((3, 128, 157)).shape))
+    # print(summary(model, torch.randn((3, 128, 157)).shape))
     
     
     model.to("cpu")
@@ -51,7 +51,7 @@ def export_to_onnx():
     input_name = "input"
     output_name = "output"
 
-    torch.onnx.export(model.model, dummy_input, "model2.onnx", 
+    torch.onnx.export(model.model, dummy_input, f"{CONFIG.fine_tune_path}.onnx", 
                   input_names=[input_name],
                   output_names=[output_name],
                   dynamic_axes={input_name: {0: "batch_size"}, output_name: {0: "batch_size"}})
@@ -74,7 +74,7 @@ def export_to_jit():
     model.to("cpu")
     dummy_input = torch.randn((1,  3, 128, 157)) 
     traced_model = torch.jit.trace(model.model, dummy_input)
-    traced_model.save("model.pt")
+    traced_model.save(f"{CONFIG.fine_tune_path}.pt")
   
 
 if __name__ == "__main__":

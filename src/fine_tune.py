@@ -4,11 +4,9 @@ from tqdm import tqdm
 from src.data.get_data_loaders import get_data_loaders
 from src.data.dataset import BirdClefDataset
 from src.data.get_classified_df import get_classified_df
-from torch.utils.data import DataLoader
-from hydra.core.config_store import ConfigStore
-from hydra.core.hydra_config import HydraConfig
+from torch.utils.data import DataLoader 
 from dataclasses import dataclass
-import hydra
+ 
 import torch.nn as nn
 import torch
 from lightning.pytorch.callbacks import DeviceStatsMonitor
@@ -32,14 +30,17 @@ os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 def get_num_classes(df):
     return len(df["species"].unique())
 
+def load_backbone_weights_from_checkpoint(model, checkpoint_path):
+    checkpoint = torch.load(checkpoint_path)
+    model.load_state_dict(checkpoint["state_dict"], strict=False)
+    return model
 
 def train():
     torch.set_float32_matmul_precision(CONFIG.train.float32_matmul_precision)
 
     fine_tune_df = pd.read_csv(CONFIG.data_processing.fine_tune_csv_path) 
     train_df = pd.read_csv(CONFIG.data_processing.csv_path)
-
-    # wandb_logger = WandbLogger(project="bird_clef_2024", id=config.id)
+ 
     neptune_logger = NeptuneLogger(
         project="kirill.yatsy/birdclef-2024",
         name=CONFIG.id,
@@ -48,23 +49,19 @@ def train():
     )
 
     model_wrapper = BirdCleffModel.load_from_checkpoint(
-        CONFIG.train.checkpoint_path, df=train_df, num_classes=926#get_num_classes(train_df)
+        CONFIG.train.checkpoint_path, df=train_df, num_classes=182
     )
+    
 
     _, train_loader, val_loader = get_data_loaders(CONFIG)
     num_classes = len(fine_tune_df["species"].unique()) 
 
-    model_wrapper.init_mixup_and_cutmix(
-        num_classes
-    )
-    model_wrapper.model.head = torch.nn.Linear(
-        model_wrapper.model.backbone.num_features, num_classes
-    )
+    if model_wrapper.num_classes != num_classes:
+        print(f"Changing the number of classes from {model_wrapper.num_classes} to {num_classes}")
+        model_wrapper.init_new_num_classes(
+            num_classes
+        )
 
-    model_wrapper.num_classes = num_classes
- 
-    model_wrapper.model.head.to("cuda")
- 
 
     trainer = L.Trainer(
         max_epochs=CONFIG.train.epoch_number,
@@ -77,7 +74,7 @@ def train():
         model_wrapper,
         train_loader,
         val_dataloaders=val_loader,
-        # ckpt_path=CONFIG.train.checkpoint_path,e
+        # ckpt_path=CONFIG.train.fine_tune_checkpoint_path
     )
 
 

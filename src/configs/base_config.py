@@ -1,8 +1,7 @@
 import torch
 import torchaudio
 import yaml
-from omegaconf import DictConfig, OmegaConf
-import hydra
+ 
 from dataclasses import dataclass
 import enum
 from torchvision.transforms import v2
@@ -10,8 +9,13 @@ from src.augmentations.get_spectrogram_augmentations import MonoToThreeChannel, 
 
 FRAME_LENGTH = 20
 image_width = 600
+FRAME_LENGTH = 5
+image_width = 157
+
 audio_len = 32000 * FRAME_LENGTH
 hop_length = audio_len // (image_width - 1)
+
+print(f"hop_length: {hop_length}")
 
 class ShortAudioStategy(enum.Enum):
     MERGE_CUTTED = "cut_first_10_percent_and_add_to_track"
@@ -32,7 +36,7 @@ class ModelConfig:
 @dataclass
 class DataProcessing:
     sample_rate: int = 32000
-    frame_length: int = 10
+    frame_length: int = FRAME_LENGTH
     n_mels: int = 128
     nfft: int = 2048
     hop_length: int = hop_length
@@ -63,6 +67,7 @@ class TrainType:
     gradient_clip_val: float
     fine_tune: bool
     checkpoint_path: str = None
+    fine_tune_checkpoint_path: str = None
 
 
 @dataclass
@@ -84,7 +89,7 @@ class Augmentations:
             sample_rate=32000, 
             n_mels=128,
             n_fft=2048,
-            hop_length=512, 
+            hop_length=hop_length, 
             top_db=80, 
             f_min=0,
             f_max=16000, 
@@ -106,7 +111,8 @@ class BirdConfig:
     data_processing: DataProcessing
     train: TrainType
     scheduler: SchedulerType
-    datasets: SplittedDatasets
+    # datasets: SplittedDatasets
     augmentations: Augmentations
-    model: ModelConfig 
+    model: ModelConfig
+    fine_tune_path: str = None
 

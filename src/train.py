@@ -4,11 +4,9 @@ from tqdm import tqdm
 from src.data.get_data_loaders import get_data_loaders
 from src.data.dataset import BirdClefDataset
 from src.data.get_classified_df import get_classified_df
-from torch.utils.data import DataLoader
-from hydra.core.config_store import ConfigStore
-from hydra.core.hydra_config import HydraConfig
+from torch.utils.data import DataLoader 
 from dataclasses import dataclass
-import hydra
+ 
 import torch.nn as nn
 import torch
 from lightning.pytorch.callbacks import DeviceStatsMonitor
@@ -23,11 +21,11 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import NeptuneLogger
-import neptune
+ 
+from src.utils.get_backbone_weights_from_checkpoint import get_backbone_weights_from_checkpoint
 
 def train():
     torch.set_float32_matmul_precision(CONFIG.train.float32_matmul_precision)
-    # wandb_logger = WandbLogger(project="bird_clef_2024", id=config.id)
     neptune_logger = NeptuneLogger(
         project="kirill.yatsy/birdclef-2024",
         name=CONFIG.id,
@@ -40,7 +38,16 @@ def train():
     num_classes = len(df["species"].unique())
     print(f"Number of classes: {num_classes}")
 
-    model_wrapper = BirdCleffModel(df, num_classes) 
+    model_wrapper = BirdCleffModel(df, num_classes)
+
+    # filtered_state_dict = get_backbone_weights_from_checkpoint(model_wrapper.model, CONFIG.train.checkpoint_path)
+    # # print(filtered_state_dict)
+    # print("Loading the backbone weights")
+    # model_wrapper.model.load_state_dict(filtered_state_dict, strict=False)
+    # print("list of names of loaded layouts")
+    # print(model_wrapper.model.state_dict().keys())
+
+    
 
     trainer = L.Trainer( 
         max_epochs=CONFIG.train.epoch_number,
@@ -49,6 +56,7 @@ def train():
         fast_dev_run=CONFIG.train.fast_dev_run,
         # fast_dev_run=True,
         gradient_clip_val=CONFIG.train.gradient_clip_val, 
+        # min_epochs=100,
         # accelerator="cpu",
         # max_steps=5, 
     )
