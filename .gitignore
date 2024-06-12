@@ -192,3 +192,9 @@ production/tf_efficientnet_b0_ns/v1.val.csv
 notebooks/ensemble/meta_model.cbm
 notebooks/ensemble/meta_model.pt
 notebooks/ensemble/meta_model.pth
+production/dpn68b/v2.onnx
+production/dpn68b/v2.train.csv
+production/dpn68b/v2.val.csv
+production/efficientnet_b3/v2.onnx
+production/efficientnet_b3/v2.train.csv
+production/efficientnet_b3/v2.val.csv

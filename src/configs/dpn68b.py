@@ -36,7 +36,7 @@ DPN68B_CONFIG = BirdConfig(
         lr=0.001,
         num_workers=8,
         checkpoint_path="checkpoints/dpn68b/model-epoch=35-train_loss=0.00.ckpt",
-        fine_tune_checkpoint_path="checkpoints/dpn68b/model-fine-tune1-epoch=05-val_loss=-7824.86.ckpt",
+        fine_tune_checkpoint_path="checkpoints/dpn68b/model-fine-tune1-epoch=48-val_loss=-8073.44.ckpt",
         float32_matmul_precision="high",
         save_model_path="checkpoints/dpn68b",
         save_model_every_epoch_overwrite=True,
@@ -52,5 +52,5 @@ DPN68B_CONFIG = BirdConfig(
         useMixup=True,
     ),
     model=ModelConfig(in_channels=3, freeze_backbone=FINE_TUNE),
-    fine_tune_path="production/dpn68b/v1",
+    fine_tune_path="production/dpn68b/v2",
 )

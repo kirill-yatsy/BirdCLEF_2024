@@ -48,18 +48,24 @@ def train():
         log_model_checkpoints=False,
     )
 
-    model_wrapper = BirdCleffModel.load_from_checkpoint(
-        CONFIG.train.checkpoint_path, df=train_df, num_classes=182
-    )
-    
-
     _, train_loader, val_loader = get_data_loaders(CONFIG)
     num_classes = len(fine_tune_df["species"].unique()) 
 
-    if model_wrapper.num_classes != num_classes:
-        print(f"Changing the number of classes from {model_wrapper.num_classes} to {num_classes}")
-        model_wrapper.init_new_num_classes(
-            num_classes
+    if not CONFIG.train.fine_tune_checkpoint_path:
+        model_wrapper = BirdCleffModel.load_from_checkpoint(
+            CONFIG.train.checkpoint_path, df=train_df, num_classes=get_num_classes(train_df)
+        )
+
+        if model_wrapper.num_classes != num_classes:
+            print(f"Changing the number of classes from {model_wrapper.num_classes} to {num_classes}")
+            model_wrapper.init_new_num_classes(
+                num_classes
+            )
+
+    else:
+        model_wrapper = BirdCleffModel(
+            df=fine_tune_df,
+            num_classes=num_classes,
         )
 
 
@@ -74,7 +80,7 @@ def train():
         model_wrapper,
         train_loader,
         val_dataloaders=val_loader,
-        # ckpt_path=CONFIG.train.fine_tune_checkpoint_path
+        ckpt_path=CONFIG.train.fine_tune_checkpoint_path
     )
 
 

@@ -100,7 +100,6 @@ class Model(nn.Module):
         
         return x
 
-
 class BirdCleffModel(L.LightningModule):
     def __init__(self, df, num_classes):
         super().__init__()
@@ -140,8 +139,11 @@ class BirdCleffModel(L.LightningModule):
         _, y, _, x = batch
         y = y.long()
         if CONFIG.augmentations.useMixup:
+            # random choice between cutmix and mixup and noop
+            
             cutmix_or_mixup = v2.RandomChoice([self.cutmix, self.mixup])
             x,y = cutmix_or_mixup(x, y)
+            
         
 
         y_hat = self(x)

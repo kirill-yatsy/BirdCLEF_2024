@@ -27,7 +27,7 @@ def export_to_onnx():
         num_classes=182,
     ).cuda()
     model = BirdCleffModel.load_from_checkpoint(
-        "checkpoints/efficientnet_b3/model-fine-tune1-epoch=29-val_loss=-8169.08.ckpt",
+        CONFIG.train.fine_tune_checkpoint_path,
         df=df,
         num_classes=182,
     )

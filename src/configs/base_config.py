@@ -9,8 +9,8 @@ from src.augmentations.get_spectrogram_augmentations import MonoToThreeChannel, 
 
 FRAME_LENGTH = 20
 image_width = 600
-FRAME_LENGTH = 5
-image_width = 157
+# FRAME_LENGTH = 5
+# image_width = 157
 
 audio_len = 32000 * FRAME_LENGTH
 hop_length = audio_len // (image_width - 1)
